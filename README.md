@@ -81,4 +81,4 @@ Theo Moore-Calters
 
 ## ➤ License
 	
-Licensed under [license](https://opensource.org/licenses/license).
+Licensed under [MIT](https://opensource.org/license/mit-0/).
