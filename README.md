@@ -30,6 +30,11 @@ By selecting a unique username and joining a chat room, users can seamlessly exc
 Explore the dynamic world of Boid Chat and connect with users worldwide through this engaging platform!
 
 
+<p align="center">
+  <img src="images/giphy.gif" alt="Logo" width="450" height="auto" />
+</p>
+
+
 [![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)](#rocket-dependencies)
 
 ## ➤ :rocket: Dependencies
