@@ -47,7 +47,6 @@
     ]
   },
   "devDependencies": {
-    "@appnest/readme": "^1.2.7",
     "@types/react-scroll-to-bottom": "^4.2.1",
     "@types/three": "^0.155.1",
     "prettier": "3.0.3",
