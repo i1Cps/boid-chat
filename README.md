@@ -1,4 +1,4 @@
-<!-- ⚠️ This README has been generated from the file(s) "blueprint.md" ⚠️--><h1 align="center">[boid-chat](https://boid-chat.com)</h1>
+<h1 href="https://www.markdownguide.org" target="_blank" align="center">boid-chat</h1>
 <p align="center">
   <img src="images/boid_pic_clean.png" alt="Logo" width="550" height="auto" />
 </p>
