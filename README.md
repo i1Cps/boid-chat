@@ -1,7 +1,7 @@
 <h1 align="center"><a href="https://boid-chat.com">boid-chat</a></h1>
 
 <p align="center">
-  <img src="images/boid_pic_clean.png" alt="Logo" width="550" height="auto" />
+  <img src="images/boid_pic_clean.png" alt="Logo" width="450" height="auto" />
 </p>
 
 
@@ -31,7 +31,7 @@ Explore the dynamic world of Boid Chat and connect with users worldwide through 
 
 
 <p align="center">
-  <img src="images/giphy.gif" alt="Logo" width="450" height="auto" />
+  <img src="images/giphy.gif" alt="Logo" width="650" height="auto" />
 </p>
 
 
