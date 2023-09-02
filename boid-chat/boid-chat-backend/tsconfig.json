@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "es5" /* Set the JavaScript version to target */,
+    "module": "esnext",
+    "strict": true /* Enable strict type checking */,
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true /* Enforce consistent file naming */,
+    "resolveJsonModule": true /* Allow importing JSON files */,
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "noFallthroughCasesInSwitch": true,
+    /* Skip checking declaration files (*.d.ts) */
+    "allowSyntheticDefaultImports": true,
+    "noEmit": true
+  },
+
+  "include": ["*.ts"] /* Include TypeScript files for compilation */
+}
