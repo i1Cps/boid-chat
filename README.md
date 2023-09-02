@@ -23,7 +23,7 @@
 
 ## ➤ ::pencil:: About The Project
 
-Boid Chat is an innovative real-time web Chat Application that combines interactive 3D-rendered flock simulations with global connectivity.
+[Boid Chat](https://boid-chat.com) is an innovative real-time web Chat Application that combines interactive 3D-rendered flock simulations with global connectivity.
 
 By selecting a unique username and joining a chat room, users can seamlessly exchange messages with people from across the globe. Each virtual room is driven by 600 individual boids, each adhering to the fundamental principles outlined in the renowned [Boids](https://www.red3d.com/cwr/boids) paper by Craig Reynolds, first published in 1987.
 
