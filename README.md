@@ -1,6 +1,4 @@
-<h1 align="center">boid-chat</h1>
-
-<a href="https://boid-chat.com" target="_blank" style="height: 60px !important;width: 217px !important;" ></a>
+<h1 align="center"><a href="https://boid-chat.com">boid-chat</a></h1>
 
 <p align="center">
   <img src="images/boid_pic_clean.png" alt="Logo" width="550" height="auto" />
