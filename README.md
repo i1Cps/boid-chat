@@ -1,6 +1,6 @@
 <!-- ⚠️ This README has been generated from the file(s) "blueprint.md" ⚠️--><h1 align="center">boid-chat</h1>
 <p align="center">
-  <img src="images/boid-pic_clean.png" alt="Logo" width="150" height="auto" />
+  <img src="images/boid_pic_clean.png" alt="Logo" width="150" height="auto" />
 </p>
 
 
