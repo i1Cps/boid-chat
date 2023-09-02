@@ -1,6 +1,6 @@
-<h1 href="https://www.markdownguide.org" target="_blank" align="center">boid-chat</h1>
+<h1 align="center">boid-chat</h1>
 
-<a href="https://boid-chat.com" target="_blank"><img style="height: 60px !important;width: 217px !important;" ></a>
+<a href="https://boid-chat.com" target="_blank" style="height: 60px !important;width: 217px !important;" ></a>
 
 <p align="center">
   <img src="images/boid_pic_clean.png" alt="Logo" width="550" height="auto" />
