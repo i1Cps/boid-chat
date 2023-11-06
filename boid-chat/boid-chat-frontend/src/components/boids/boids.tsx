@@ -21,8 +21,8 @@ const BoidsComponent: React.FC<ThreeCanvasProps> = ({ width, height }) => {
   const controls = useRef<OrbitControls | null>(null);
 
   // Custom constants and variables
-  const numberOfBoids = useRef<number>(1000);
-  const AREA = useRef<number>(250);
+  const numberOfBoids = useRef<number>(600);
+  const AREA = useRef<number>(400);
   const quadTreeCap = useRef<number>(4);
 
   const firstBoid = useRef<boolean>(true); // <------------ Special red boid
