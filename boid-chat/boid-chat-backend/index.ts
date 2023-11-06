@@ -19,7 +19,7 @@ const io = new Server(server, {
 
 const io = new Server(server, {
   cors: {
-    origin: "localhost:3000",
+    origin: "http://localhost:3000",
     methods: ["GET", "POST"],
   },
 });
