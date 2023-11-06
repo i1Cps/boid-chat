@@ -8,7 +8,7 @@ import "../index.css";
 
 import io from "socket.io-client";
 //const ENDPOINT = "https://boid-chat-backend.com";
-const ENDPOINT = "httplocalhost:5000"
+const ENDPOINT = "localhost:5000"
 let socket = io(ENDPOINT, {});
 
 function MainPage() {

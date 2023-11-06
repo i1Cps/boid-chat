@@ -4,6 +4,7 @@ import KeyboardInputs from "./keyboardInputs";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { boidAgent } from "./boidAgent";
 import { boidSize } from "./types";
+import { QuadTree, AABB } from './quadTree';
 
 interface ThreeCanvasProps {
   width: number;
@@ -18,15 +19,22 @@ const BoidsComponent: React.FC<ThreeCanvasProps> = ({ width, height }) => {
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const keyboardInput = useRef<KeyboardInputs | null>(null);
   const controls = useRef<OrbitControls | null>(null);
+
   // Custom constants and variables
+  const numberOfBoids = useRef<number>(1000);
+  const AREA = useRef<number>(250);
+  const quadTreeCap = useRef<number>(4);
+
   const firstBoid = useRef<boolean>(true); // <------------ Special red boid
   const allign = useRef<boolean>(true); // <------------- Turns on allignment principle
   const cohesion = useRef<boolean>(true); // < ----------------------------- Turns on cohesian principle
   const seperation = useRef<boolean>(true); // <---------------------------- Turns on seperation principle
   const boidsCanMove = useRef<boolean>(true); //<------ boids can move
-  const boidArea = useRef<{ x: number; z: number }>({ x: 400, z: 400 }); //< --------- Area which boids can fly in
+
+  //const boidArea = useRef<{ x: number; z: number }>({ x: 400, z: 400 }); //< --------- Area which boids can fly in
   const boidArray = useRef<boidAgent[]>([]); // <------------- Array to keep tabs on all boids generated
-  const numberOfBoids = useRef<number>(600);
+  const QTBoundry = useRef<AABB | null>(null);
+  const QT = useRef<QuadTree | null>(null);
 
   useEffect(() => {
     // RENDERER
@@ -90,7 +98,7 @@ const BoidsComponent: React.FC<ThreeCanvasProps> = ({ width, height }) => {
       cameraRef.current,
       rendererRef.current.domElement,
     );
-    controls.current.autoRotate = true;
+    controls.current.autoRotate = false;
     controls.current.autoRotateSpeed = 0.5;
     controls.current.enableZoom = false;
     controls.current.enableDamping = true;
@@ -103,24 +111,24 @@ const BoidsComponent: React.FC<ThreeCanvasProps> = ({ width, height }) => {
     firstBoid.current = true;
     allign.current = true;
     cohesion.current = true;
-    seperation.current = false;
+    seperation.current = true;
     boidsCanMove.current = true;
-    boidArea.current = {
-      x: 400,
-      z: 400,
-    };
+    AREA.current = 250;
     boidArray.current = [];
-    numberOfBoids.current = 600;
+    numberOfBoids.current = 1000;
+    QTBoundry.current = new AABB({x:0, z:0}, {w: AREA.current, h:AREA.current})
+    QT.current  = new QuadTree(QTBoundry.current, quadTreeCap.current)
+
 
     // Function that creates boids
-    const createboid = (scene: THREE.Scene): boidAgent => {
+    const createboid = (scene: THREE.Scene)  => {
       // Choose random spawn loaction for boid
-      let posX = boidArea.current.x - Math.random() * boidArea.current.x * 2;
-      let posZ = boidArea.current.z - Math.random() * boidArea.current.z * 2;
+      let posX = AREA.current - Math.random() * AREA.current * 2;
+      let posZ = AREA.current - Math.random() * AREA.current * 2;
       const position = new THREE.Vector3(posX, 0, posZ);
 
       // Choose random rotation value for boid
-      const rotation = Math.random() * Math.PI;
+      const rotation = Math.random() * (2*Math.PI);
 
       // Boid size
       const boidSize: boidSize = {
@@ -129,58 +137,72 @@ const BoidsComponent: React.FC<ThreeCanvasProps> = ({ width, height }) => {
         radialSegment: 32,
       };
 
+      const boidArea = {
+        x:AREA.current,
+        z:AREA.current
+      }
+
       // Create boid
       const boid = firstBoid.current
         ? new boidAgent(
             boidSize,
             position,
             rotation,
-            0xff0000,
+            //0xff0000,
+            0xc3469d,
             scene,
-            boidArea.current,
+            boidArea,
+            boidArray.current.length
           )
         : new boidAgent(
             boidSize,
             position,
             rotation,
-            0xffff00,
+            //0xffff00,
+            0xccccff,
             scene,
-            boidArea.current,
+            boidArea,
+            boidArray.current.length
           );
 
       firstBoid.current = false;
-      return boid;
+      boidArray.current.push(boid)
     };
 
     const moveBoid = (boid: boidAgent) => {
-      if (boidsCanMove) {
+      if (boidsCanMove.current) {
         boid.step();
-        if (allign.current === true) {
-          boid.allign(boidArray.current);
-        }
-        if (cohesion.current === true) {
-          boid.cohesion(boidArray.current);
-        }
-        if (seperation.current === true) {
-          // bugged
-          //boid.seperation(boidArray)
-        }
+        // Apply principles every time step if turned on
+        if(allign.current === true) {boid.allign(QT.current!)}
+        if(cohesion.current === true) {boid.cohesion(QT.current!)}
+        if(seperation.current === true){boid.seperation(QT.current!)}
       }
     };
 
     // Spawn Boids
     for (let i = 0; i < numberOfBoids.current; i++) {
-      const newBoid = createboid(sceneRef.current);
-      boidArray.current.push(newBoid);
+      createboid(sceneRef.current);
+      //boidArray.current.push(newBoid);
+    }
+
+    // Inserts all boids into quad tree
+    function insertAll(boidArray: boidAgent[], _QT:QuadTree){
+      for(let boid of boidArray){
+        let position = boid.agentObject.position;
+        _QT.insert({object: boid, position: position})
+      }
     }
 
     // Animation loop
     const animate = () => {
+      // Create new quad tree
+      QT.current = new QuadTree(QTBoundry.current!, quadTreeCap.current)
+      // Insert every boid in boid array into new quad tree
+      insertAll(boidArray.current, QT.current)
       // For each boid call function to move it
       boidArray.current.forEach(moveBoid);
       // Update your scene and camera here
       rendererRef.current?.render(sceneRef.current!, cameraRef.current!);
-      //update()
       //console.log(cameraRef.current?.position)
       controls.current?.update();
       requestAnimationFrame(animate);

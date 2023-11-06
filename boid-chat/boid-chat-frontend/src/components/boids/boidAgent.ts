@@ -1,79 +1,121 @@
 import * as THREE from "three";
-import { boidSize } from "./types";
+import { QuadTree, AABB } from "./quadTree";
 
 export class boidAgent {
+  private id: number;
+  private cachedDirection: THREE.Vector3;
+  private zeroZeroZeroDirection: THREE.Vector3;
   private scene: THREE.Scene;
+  private boidArea: { x: number; z: number };
+
   private radius: number;
   private height: number;
-  private boidArea: { x: number; z: number };
   private radialSegment: number;
   private colour: number;
-  private agentObject: THREE.Mesh;
-  private linearVelocity: number;
 
+  public agentObject: THREE.Mesh;
+
+  private linearVelocity: number;
   private angularVelocity: number;
   private avChangeWeight: number;
   private angularVelocityDecayRate: number;
 
   private allignWeight: number;
   private seperationWeight: number;
+  private cohesionWeight: number;
 
   private direction: THREE.Vector3;
   private rotation: number;
-  private objectPosition: THREE.Vector3;
+  private position: THREE.Vector3;
+
+  private allignRange: number;
+  private allignSearchArea: AABB;
+  private cohesionRange: number;
+  private cohesionSearchArea: AABB;
+  private seperationRange: number;
+  private seperationSearchArea: AABB;
+
   private myBoid: boolean;
+  private nearMyBoid: boolean;
   private xx: boolean;
 
   constructor(
-    size: boidSize,
+    size: { radius: number; height: number; radialSegment: number },
     position: THREE.Vector3,
     rotation: number,
     colour: number,
     scene: THREE.Scene,
     boidArea: { x: number; z: number },
+    id_: number
   ) {
+    this.id = id_;
+    this.cachedDirection = new THREE.Vector3();
+    this.zeroZeroZeroDirection = new THREE.Vector3();
     this.scene = scene;
+    this.boidArea = boidArea;
+
     this.radius = size.radius;
     this.height = size.height;
-    this.boidArea = boidArea;
     this.radialSegment = size.radialSegment;
     this.colour = colour;
-    this.agentObject = new THREE.Mesh();
-    this.linearVelocity = 0.7;
 
+    this.agentObject = new THREE.Mesh(new THREE.ConeGeometry(), new THREE.Material()); // THREE.js MESH object of boid
+
+    this.nearMyBoid = false;
+
+    this.linearVelocity = 0.7;
     this.angularVelocity = 0.0;
     this.avChangeWeight = 0.1;
     this.angularVelocityDecayRate = 0.99;
 
-    this.allignWeight = 0.1;
-    this.seperationWeight = 0;
+    this.allignWeight = 0.105; // 1000 boids 0.105   25
+    this.cohesionWeight = 0.0095; // 1000 boids 0.0055  15
+    this.seperationWeight = 0.01; // 1000 boids 0.001   5
 
-    this.direction = new THREE.Vector3();
     this.rotation = rotation;
-    this.objectPosition = position;
+    this.position = position;
     this.myBoid = false;
     this.xx = true;
     this.create();
+    this.direction = this.getDirection();
+    this.position = this.agentObject!.position;
+
+    this.allignRange = 25;
+    this.allignSearchArea = new AABB(
+      { x: this.agentObject.position.x, z: this.agentObject.position.z },
+      { w: this.allignRange, h: this.allignRange }
+    );
+    this.cohesionRange = 15;
+    this.cohesionSearchArea = new AABB(
+      { x: this.agentObject.position.x, z: this.agentObject.position.z },
+      { w: this.cohesionRange, h: this.cohesionRange }
+    );
+    this.seperationRange = 5;
+    this.seperationSearchArea = new AABB(
+      { x: this.agentObject.position.x, z: this.agentObject.position.z },
+      { w: this.seperationRange, h: this.seperationRange }
+    );
   }
+
   // Create Boid and add to scene
   create() {
     const geometry = new THREE.ConeGeometry(
       this.radius,
       this.height,
-      this.radialSegment,
+      this.radialSegment
     );
-    const material = new THREE.MeshBasicMaterial({ color: this.colour });
+    const material = new THREE.MeshBasicMaterial({ color: new THREE.Color(this.colour)});
     this.agentObject = new THREE.Mesh(geometry, material);
 
     this.agentObject.position.set(
-      this.objectPosition.x,
-      this.objectPosition.y,
-      this.objectPosition.z,
+      this.position.x,
+      this.position.y,
+      this.position.z
     );
     this.agentObject.rotateX(Math.PI / 2);
     this.agentObject.rotateZ(this.rotation);
 
-    if (this.colour === 0xff0000) {
+    if (this.colour == 0xff0000) {
       this.myBoid = true;
     }
     this.scene.add(this.agentObject);
@@ -84,15 +126,17 @@ export class boidAgent {
     this.applyLinearVelocity();
     this.applyAngularVelocity();
     this.keepBoidInGrid();
-    this.keepBoid2D();
+    //this.keepBoid2D();
   }
 
   applyLinearVelocity() {
-    const dir = this.getDirection();
+    const dir = this.direction;
     this.agentObject.position.addScaledVector(
       dir.normalize(),
-      this.linearVelocity,
+      this.linearVelocity
     );
+    this.agentObject.position.setComponent(1, 0);
+    this.position = this.agentObject.position;
   }
 
   applyAngularVelocity() {
@@ -104,7 +148,10 @@ export class boidAgent {
   // Rotate boid based on angular velocity
   changeBoidAngle() {
     // This returns direction vector e.g. (x=0.48, y=0.0, z=0.48)
-    let currentDirection = this.getDirection();
+
+    //let currentDirection = this.getDirection();
+    let currentDirection = this.direction;
+
     // Angle increment
     let angleIncrement = this.angularVelocity;
     // Calculate sin and cos theta
@@ -116,6 +163,9 @@ export class boidAgent {
     let newZDirection =
       currentDirection.x * sinTheta + currentDirection.z * cosTheta;
     let newDirection = new THREE.Vector3(newXDirection, 0, newZDirection);
+    newDirection.setY(0);
+    newDirection.normalize();
+    this.direction = newDirection;
     this.setDirection(newDirection);
   }
 
@@ -123,9 +173,7 @@ export class boidAgent {
   adjustAngularVelocity() {
     // Randomly samples a normal dsitrubuted number to add to angular velocity
     let adjustAV = this.randn_normal_dist(-0.1, 0.1);
-
-    //console.log(dirWeight);
-    this.angularVelocity += adjustAV * this.avChangeWeight;
+    this.angularVelocity += (adjustAV * this.avChangeWeight);
   }
 
   // Decay the angular velocity back to 0.0 (make boid face straight) over time
@@ -137,47 +185,55 @@ export class boidAgent {
   }
 
   keepBoidInGrid() {
-    if (this.agentObject.position.y > 20) {
+    /* if (this.agentObject.position.y > 20) {
       this.agentObject.position.setY(20);
+      this.position.setY(20);
     }
     if (this.agentObject.position.y < -5) {
       this.agentObject.position.setY(-5);
+      this.position.setY(-5);
       if (this.myBoid) {
         console.log("mad mad");
       }
-    }
+    } */
 
     if (this.agentObject.position.x > this.boidArea.x) {
       this.agentObject.position.setX(-this.boidArea.x);
+      this.position.setX(-this.boidArea.x);
     } else if (this.agentObject.position.x < -this.boidArea.x) {
       this.agentObject.position.setX(this.boidArea.x);
+      this.position.setX(this.boidArea.x);
     }
 
     if (this.agentObject.position.z > this.boidArea.z) {
       this.agentObject.position.setZ(-this.boidArea.z);
+      this.position.setZ(-this.boidArea.z);
     } else if (this.agentObject.position.z < -this.boidArea.z) {
       this.agentObject.position.setZ(this.boidArea.z);
+      this.position.setZ(this.boidArea.z);
     }
   }
 
-  // function to fix stupid flying issues. not even a fix tbh but gotta do what you gotta do
+  /* // function to fix stupid flying issues. not even a fix tbh but gotta do what you gotta do
   keepBoid2D() {
-    let boidDir = this.getDirection();
+    //let boidDir = this.getDirection()
+    let boidDir = this.direction;
+
     boidDir.setComponent(1, 0);
     this.setDirection(boidDir);
-  }
+    this.direction = boidDir;
+  } */
 
   // One method to get direction could be to rotate it upright again  ( do the reverse of the original rotation)
   getDirection() {
-    // points boid back upright because thats the only way to get worlddirection for some stupid reason
-    let vector = new THREE.Vector3();
+    // Points boid back upright because thats the only way to get worlddirection for some stupid reason
     this.agentObject.rotateX(-Math.PI / 2);
-    var dir = this.agentObject.getWorldDirection(vector);
+    var dir = this.agentObject.getWorldDirection(this.cachedDirection);
     this.agentObject.rotateX(Math.PI / 2);
     return dir;
   }
 
-  // sets new direction on object
+  // Sets new direction on object
   setDirection(newDirection: THREE.Vector3) {
     this.agentObject.rotateX(-Math.PI / 2);
     var pos = new THREE.Vector3();
@@ -186,136 +242,118 @@ export class boidAgent {
     this.agentObject.rotateX(Math.PI / 2);
   }
 
-  /* distanceFromBoid(thisBoid, otherBoid) {
-        let thisBoidPos = thisBoid.agentObject.position;
-        let otherBoidPos = otherBoid.agentObject.position;
-        return thisBoidPos.distanceTo(otherBoidPos);
-    } */
-
   // Alignment Principle...
   // Alignment: steer towards the average heading of local boids
-  allign(boids: boidAgent[]) {
-    let boidNearby = false;
-    const visableDistance = 20;
-    var total = 0;
-    let avgDirection = new THREE.Vector3();
-
-    // Loop through each boid and check whether its in the visable range
-    for (let boid of boids) {
-      let currentBoidPos = this.agentObject.position;
-      let otherBoidPos = boid.agentObject.position;
-      // If boid is visable store its direction
-      if (
-        boid !== this &&
-        currentBoidPos.distanceTo(otherBoidPos) < visableDistance
-      ) {
-        let boidDirection = boid.getDirection();
-        avgDirection.add(boidDirection);
-        boidNearby = true;
-        total++;
+  allign(quadTree: QuadTree) {
+    // Update search boundry instead of creating a new one, search nearby boids
+    this.allignSearchArea.setCenter(this.agentObject.position.x, this.agentObject.position.z)
+    let nearbyBoids = quadTree.find(this.allignSearchArea);
+    // Skip if boid in list is 'this'
+    if (nearbyBoids.length < 2) {
+      return;
+    }
+    // Use cached null direction vec to avoid new Three.Vector3() calls (its very slow)
+    let avgDirection = this.zeroZeroZeroDirection;
+    // Loop through nearby boids and store and get average direction
+    for (let boidProperties of nearbyBoids) {
+      // Skip if the in the nearby boids is the boid itself
+      if (boidProperties.id == this.id) {
+        continue;
       }
+      avgDirection.add(boidProperties.direction);
     }
+    avgDirection.normalize();
+    // Get weighted average between current boid direction and average direction of local boid
+    let allignedDirection = this.zeroZeroZeroDirection.clone();
+    allignedDirection.addVectors(
+      this.direction,
+      avgDirection.multiplyScalar(this.allignWeight)
+    );
+    allignedDirection.normalize();
 
-    if (boidNearby) {
-      // Get average direction of all visable boids
-      avgDirection.divideScalar(total);
-
-      let currentDirection = this.getDirection();
-      let allignedDirection = new THREE.Vector3();
-      // Get weighted average between current boid direction and average direction of local boid
-      allignedDirection.addVectors(
-        currentDirection,
-        avgDirection.multiplyScalar(this.allignWeight),
-      );
-      this.setDirection(allignedDirection);
-    }
+    this.setDirection(allignedDirection);
+    this.direction = allignedDirection;
   }
 
   // Cohesion Principle...
   // Cohesion: steer to move towards the average position (center of mass) of local flockmates
-  cohesion(boids: boidAgent[]) {
-    let boidNearby = false;
-    const visableDistance = 50;
-    var total = 0;
-    let avgPosition = new THREE.Vector3();
-
-    // Loop through each boid and check whether its in the visable range
-    for (let boid of boids) {
-      let currentBoidPos = this.agentObject.position;
-      let otherBoidPos = boid.agentObject.position;
-
-      // If boid is visable store its position
-      if (
-        boid !== this &&
-        currentBoidPos.distanceTo(otherBoidPos) < visableDistance
-      ) {
-        avgPosition.add(otherBoidPos);
-        boidNearby = true;
-        total++;
+  cohesion(quadTree: QuadTree) {
+    // Update search boundry instead of creating a new one, search nearby boids
+    this.cohesionSearchArea.setCenter(this.agentObject.position.x, this.agentObject.position.z)
+    let nearbyBoids = quadTree.find(this.cohesionSearchArea);
+    // Skip if boid in list is 'this'
+    if (nearbyBoids.length < 2) {
+      return;
+    }
+    // Use cached null direction vec to avoid new Three.Vector3() calls (its very slow)
+    let avgPosition = this.zeroZeroZeroDirection.clone();
+    // Loop through nearby boids get average position of each nearby boids
+    for (let boidProperties of nearbyBoids) {
+      // Skip if the in the nearby boids is the boid itself
+      if (boidProperties.id == this.id) {
+        continue;
       }
+      avgPosition.add(boidProperties.position);
     }
+    // Dont normalize position vectors
+    avgPosition.divideScalar(nearbyBoids.length - 1);
 
-    if (boidNearby) {
-      // Get average position of all visable boids
-      avgPosition = avgPosition.divideScalar(total);
-      // get direction to center of the flock by subtracting position of current boid from average position flock mates.
-      // this will give a direction vector which will tell our boid where to go
-      let centerDirection = new THREE.Vector3();
-      centerDirection.subVectors(avgPosition, this.agentObject.position);
+    // Get weighted average between current boid direction and direction to average position of nearby boids
+    let centerDirection = this.zeroZeroZeroDirection.clone();
+    centerDirection.subVectors(avgPosition, this.position).normalize();
+    let cohesianDirection = this.zeroZeroZeroDirection.normalize();
+    cohesianDirection.addVectors(
+      this.direction,
+      centerDirection.multiplyScalar(this.cohesionWeight)
+    );
+    cohesianDirection.normalize();
 
-      // get a average direction from current direction of boid and new direction calculated
-      let currentDirection = this.getDirection();
-      let newDirection = new THREE.Vector3();
-      // get a weighted final direction for boid
-      newDirection.addVectors(
-        currentDirection,
-        centerDirection.multiplyScalar(0.0005),
-      );
-      // get average from adding them
-      newDirection.multiplyScalar(0.5);
-
-      // get weighted average between current boid direction and new direction
-      //al.addVectors(currentDirection, newDirection);
-      this.setDirection(newDirection);
-    }
+    this.setDirection(cohesianDirection);
+    this.direction = cohesianDirection;
   }
 
   // Seperation Principle...
-  // Seperation: steer to avoid crowding local boids ---- not working
-  seperation(boids: boidAgent[]) {
-    //let boidNearby = false;
-    const visableDistance = 50;
-    //const scaler = 1;
-    //var total = 0;
-    //let avgPosition = new THREE.Vector3();
-
-    // loop through each flockmate and check whether its visable
-    for (let boid of boids) {
-      let currentBoidPos = this.agentObject.position;
-      let otherBoidPos = boid.agentObject.position;
-      // if flockmate is visable calculate its distance to this.boid and its direction
-      if (
-        boid !== this &&
-        currentBoidPos.distanceTo(otherBoidPos) < visableDistance
-      ) {
-        // get distance and direction of boid from this.boid
-        // further away the smaller the force of seperation
-        // use visable distance to calculate percentages
-        //let distanceFromBoid = currentBoidPos.distanceTo(otherBoidPos);
-        /* let directionFromBoid = new THREE.Vector3().subVectors(
-          otherBoidPos,
-          currentBoidPos,
-        ); */
-        //let newDirection = directionFromBoid.negate();
-        //let force = (visableDistance - directionFromBoid) * scaler
-        //boidNearby = true;
-        //total++;
-      }
+  // Seperation: steer to avoid crowding local boids
+  seperation(quadTree: QuadTree) {
+    // Update search boundry instead of creating a new one, search nearby boids
+    this.seperationSearchArea.setCenter(this.agentObject.position.x, this.agentObject.position.z)
+    let nearbyBoids = quadTree.find(this.seperationSearchArea);
+    // Return if no unique boids nearby... 1 will always be the 'this' boid
+    if (nearbyBoids.length < 2) {
+      return;
     }
+    // Use cached null direction vec to avoid new Three.Vector3() calls (its very slow)
+    let avgSeperationDirection = this.zeroZeroZeroDirection.clone();
+    // Loop through nearby boids get average direction so this boid can steer away and not crash
+    for (let boid of nearbyBoids) {
+      // Skip if boid in list is 'this'
+      if (boid.id == this.id) {
+        continue;
+      }
+      let directionAway = this.zeroZeroZeroDirection.clone();
+      directionAway.subVectors(this.position, boid.position).normalize();
+
+      let distance = this.position.distanceTo(boid.position);
+      avgSeperationDirection.add(
+        directionAway.divideScalar(distance).normalize()
+      );
+    }
+    avgSeperationDirection.normalize();
+
+    // Get weighted average between current boid direction and seperation direction
+    let seperationDirection = this.zeroZeroZeroDirection.clone();
+    seperationDirection.addVectors(
+      this.direction,
+      avgSeperationDirection.multiplyScalar(this.seperationWeight)
+    );
+    seperationDirection.normalize();
+
+    this.setDirection(seperationDirection);
+    this.direction = seperationDirection;
   }
 
-  // Function to get random normal distribution
-  randn_normal_dist(min: number, max: number) {
+  // Function to get random normal distribution,  too slow /apparently/
+  randn_normal_dist(min: number, max:number) {
     let u = 0,
       v = 0;
     while (u === 0) {
@@ -336,5 +374,9 @@ export class boidAgent {
       num += min; // offset to min
     }
     return num;
+  }
+
+  getAgentObject(){
+    return this.agentObject
   }
 }
