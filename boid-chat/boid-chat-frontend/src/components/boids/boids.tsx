@@ -22,7 +22,7 @@ const BoidsComponent: React.FC<ThreeCanvasProps> = ({ width, height }) => {
 
   // Custom constants and variables
   const numberOfBoids = useRef<number>(600);
-  const AREA = useRef<number>(400);
+  const AREA = useRef<number>(3600);
   const quadTreeCap = useRef<number>(4);
 
   const firstBoid = useRef<boolean>(true); // <------------ Special red boid
@@ -125,7 +125,7 @@ const BoidsComponent: React.FC<ThreeCanvasProps> = ({ width, height }) => {
       // Choose random spawn loaction for boid
       let posX = AREA.current - Math.random() * AREA.current * 2;
       let posZ = AREA.current - Math.random() * AREA.current * 2;
-      const position = new THREE.Vector3(posX, 0, posZ);
+      const position = new THREE.Vector3(posX*2, 0, posZ);
 
       // Choose random rotation value for boid
       const rotation = Math.random() * (2*Math.PI);
@@ -138,7 +138,7 @@ const BoidsComponent: React.FC<ThreeCanvasProps> = ({ width, height }) => {
       };
 
       const boidArea = {
-        x:AREA.current,
+        x:AREA.current*2,
         z:AREA.current
       }
 
