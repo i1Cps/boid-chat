@@ -21,7 +21,7 @@
 
 [![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)](#pencil-about-the-project)
 
-## ➤ ::pencil:: About The Project
+## ➤ :pencil: About The Project
 
 [Boid Chat](https://boid-chat.com) is an innovative real-time web Chat Application that combines interactive 3D-rendered flock simulations with global connectivity.
 
